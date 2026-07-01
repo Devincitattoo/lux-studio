@@ -1,0 +1,23 @@
+# GitHub CODEOWNERS for lux-studio
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners
+* @Devincitattoo
+
+# Integration owners
+src/liveIntegrations.ts @Devincitattoo
+src/config.ts @Devincitattoo
+src/workflow.ts @Devincitattoo
+
+# Test coverage
+*.test.ts @Devincitattoo
+src/workflow.test.ts @Devincitattoo
+
+# Build and CI/CD
+.github/ @Devincitattoo
+package.json @Devincitattoo
+tsconfig.json @Devincitattoo
+
+# Documentation
+PLAN.md @Devincitattoo
+README.md @Devincitattoo
