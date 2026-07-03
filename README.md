@@ -1,90 +1,34 @@
-# lux-studio
+# Lux Studio — Reply Assistant
 
-A modular autonomous workflow scaffold for lead discovery, pitch automation, reply monitoring, and stateful tracking.
+Claude-powered auto-reply for Lux Studio, across SMS and email. Deployed as Twilio Serverless Functions, backed by Supabase, with a small review dashboard for anything that isn't clearly routine.
 
-## What this project contains
+## How it works
 
-- A TypeScript workflow engine that runs discovery, pitch generation, communication dispatch, reply monitoring, and validation.
-- A local JSON-backed state store to persist lead and metric history.
-- A scheduler for 5-minute reply checks and 30-minute discovery/pitch runs.
-- Tests, type checking, and linting support.
+- **SMS**: inbound texts to the Lux Studio Twilio number hit `functions/sms.js` (Twilio-signature protected).
+- **Email**: inbound mail to `devin@luxstudios.shop` is parsed by SendGrid Inbound Parse, relayed through a small Cloudflare Worker (`email-relay-worker.js`, needed because Twilio Functions reject `multipart/form-data`, which SendGrid always sends) to `functions/email-inbound.js`.
+- Both paths call Claude (`functions/claude.js`) with a channel-specific persona (`functions/persona.js` for SMS, `functions/persona-email.js` for email) to draft a reply and classify it as `routine` or `needs_review`.
+- `routine` + `AUTO_SEND_ENABLED=true` → sent automatically (Twilio for SMS, SendGrid Mail Send API for email).
+- `needs_review` → queued in Supabase, shown at `/dashboard` (gated by `DASHBOARD_SECRET`) for manual approve/edit/reject.
+- Every inbound email also gets forwarded as a copy to `FORWARD_EMAIL` so it's readable in a normal inbox.
 
-## Quick start
-
-1. Install dependencies:
+## Deploy
 
 ```bash
 npm install
+TWILIO_SID=... TWILIO_TOKEN=... node deploy.js
 ```
 
-2. Run the workflow in development mode:
+`deploy.js` talks to the Twilio Serverless REST API directly (no CLI plugin) and reads env vars from `.env` (see `.env.example`) to push to the deployed Function's environment.
 
-```bash
-npm run dev
-```
+## Data
 
-3. Run a single discovery + reply pass and then exit:
+Supabase tables (prefixed `reply_assistant_` to avoid colliding with other tables in the same project): `contacts`, `messages`, `pending_replies`. Schema in `migrations/schema.sql`.
 
-```bash
-npm run run-once
-```
+## Persona / boundaries
 
-4. Run a dry-run pass without persisting state:
+Edit `functions/persona.js` (SMS) and `functions/persona-email.js` (email) directly — not environment variables, since Twilio Function env values are capped at 450 bytes.
 
-```bash
-npm run dry-run
-```
+## Not yet built
 
-5. Live mode and required configuration
-
-The workflow can run in live mode with real lead discovery, email delivery, and reply capture. By default it uses mock/sample data unless you enable live mode.
-
-Set the following environment variables to use live data:
-
-```bash
-export LIVE_DISCOVERY=true
-export LIVE_MESSAGING=true
-export LIVE_REPLIES=true
-export LEAD_SOURCE_PROVIDER=apify-airbnb
-export APIFY_TOKEN="your-apify-token"
-export APIFY_TASK_ID="your-apify-task-id"
-export APIFY_DATASET_ID="your-apify-dataset-id"
-export APIFY_INPUT='{"query":"luxury vacation rental Miami Beach, Florida"}'
-export SENDGRID_API_KEY="your-sendgrid-api-key"
-export SENDGRID_SENDER="your-verified-sendgrid-email@example.com"
-export REPLY_SOURCE_URL="https://your-reply-endpoint.example.com/replies"
-export USE_VIDEO_GENERATION=true
-export HIGGSFIELD_API_KEY="your-higgsfield-api-key"
-export HIGGSFIELD_PROJECT_ID="your-higgsfield-project-id"
-export HIGGSFIELD_MODEL="higgsfield-mcp-video"
-export HIGGSFIELD_CALLBACK_URL="https://your-callback.example.com/higgsfield"
-```
-
-If any live-mode variable is missing, the workflow will throw a clear error and stop until the live configuration is completed.
-
-6. To enable Stripe payment intent creation, set `STRIPE_SECRET_KEY` before running the workflow.
-
-```bash
-export STRIPE_SECRET_KEY="sk_test_..."
-npm run run-once
-```
-
-7. Build for production:
-
-```bash
-npm run build
-npm start
-```
-
-4. Run checks:
-
-```bash
-npm run check
-```
-
-
-
-
-
-
-
+- Airbnb platform messaging (no official third-party API; would require browser automation, which carries real ToS risk — needs a deliberate decision before building).
+- Automatically triggering outreach from newly-discovered leads (this repo only *replies*; it doesn't yet find or cold-pitch leads).

@@ -1,6 +1,6 @@
 node_modules/
-dist/
 .env
-data/state.json
-.vscode/
+*.log
 .DS_Store
+.twilio-functions/
+.twiliodeployinfo
