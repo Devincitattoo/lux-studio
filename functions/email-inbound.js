@@ -40,7 +40,7 @@ exports.handler = async function (context, event, callback) {
 
     const replySubject = subject.toLowerCase().startsWith('re:') ? subject : `Re: ${subject}`;
 
-    if (classification === 'routine' && context.AUTO_SEND_ENABLED === 'true') {
+    if (context.AUTO_SEND_ENABLED === 'true') {
       await sendMail(context, { to: senderEmail, from: context.FROM_EMAIL, subject: replySubject, text: reply });
       await insertMessage(context, contact.id, 'outbound', reply);
     } else {

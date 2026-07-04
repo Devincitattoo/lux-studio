@@ -20,7 +20,7 @@ exports.handler = async function (context, event, callback) {
       channel: 'sms',
     });
 
-    if (classification === 'routine' && context.AUTO_SEND_ENABLED === 'true') {
+    if (context.AUTO_SEND_ENABLED === 'true') {
       await client.messages.create({ to: From, from: context.TWILIO_PHONE_NUMBER, body: reply });
       await insertMessage(context, contact.id, 'outbound', reply);
     } else {
