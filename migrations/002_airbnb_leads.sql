@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS airbnb_leads (
   listing_id  text,
   stage       text        NOT NULL DEFAULT 'outreach_sent',
   area        text,
-  contact_id  uuid        REFERENCES reply_assistant_contacts(id) ON DELETE SET NULL,
+  contact_id  integer     REFERENCES reply_assistant_contacts(id) ON DELETE SET NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );

@@ -11,6 +11,15 @@ import time
 import traceback
 from pathlib import Path
 
+# Load .env from this directory if present
+_env_file = Path(__file__).parent / ".env"
+if _env_file.exists():
+    import os
+    for _line in _env_file.read_text().splitlines():
+        if _line.strip() and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
+
 try:
     import lux_bridge as _bridge
     _BRIDGE = True
