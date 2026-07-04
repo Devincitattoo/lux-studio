@@ -8,6 +8,10 @@ function getClient(context) {
   return client;
 }
 
+function normalizeOptionalText(value) {
+  return value == undefined ? '' : String(value);
+}
+
 async function getOrCreateContact(context, channel, externalId) {
   const db = getClient(context);
 
@@ -30,8 +34,8 @@ async function getOrCreateContact(context, channel, externalId) {
 }
 
 async function insertMessage(context, contactId, direction, body, options = {}) {
-  const safeProviderSid = options.providerSid === undefined ? '' : String(options.providerSid);
-  const safeSubject = options.subject === undefined ? '' : String(options.subject);
+  const safeProviderSid = normalizeOptionalText(options.providerSid);
+  const safeSubject = normalizeOptionalText(options.subject);
   const db = getClient(context);
   const { data, error } = await db
     .from('reply_assistant_messages')
@@ -43,7 +47,7 @@ async function insertMessage(context, contactId, direction, body, options = {}) 
 }
 
 async function updateMessageProviderSid(context, messageId, providerSid) {
-  const safeProviderSid = providerSid === undefined ? '' : String(providerSid);
+  const safeProviderSid = normalizeOptionalText(providerSid);
   const db = getClient(context);
   const { error } = await db
     .from('reply_assistant_messages')
@@ -65,7 +69,7 @@ async function getRecentHistory(context, contactId, limit = 20) {
 }
 
 async function createPendingReply(context, contactId, inboundMessageId, draftBody, reasoning) {
-  const safeReasoning = reasoning === undefined ? '' : String(reasoning);
+  const safeReasoning = normalizeOptionalText(reasoning);
   const db = getClient(context);
   const { data, error } = await db
     .from('reply_assistant_pending_replies')

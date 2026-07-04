@@ -18,7 +18,6 @@ exports.handler = async function (context, event, callback) {
   const {
     getOrCreateContact,
     insertMessage,
-    updateMessageProviderSid,
     getRecentHistory,
     createPendingReply,
   } = require(Runtime.getFunctions()['db'].path);
@@ -34,17 +33,23 @@ exports.handler = async function (context, event, callback) {
     const inboundMessage = await insertMessage(context, contact.id, 'inbound', text, { subject });
 
     if (context.FORWARD_EMAIL) {
-      const forwardSubject = `[Copy] ${subject || '(no subject)'} - from ${event.from}`;
-      const forwardBody = `Forwarded copy of an inbound email to ${event.to}.\nFrom: ${event.from}\n\n${text}`;
-      const forwardContact = await getOrCreateContact(context, 'email_forward', context.FORWARD_EMAIL.toLowerCase());
-      const forwardOutbound = await insertMessage(context, forwardContact.id, 'outbound', forwardBody, { subject: forwardSubject });
-      const forwardSid = await sendMail(context, {
-        to: context.FORWARD_EMAIL,
-        from: context.FROM_EMAIL,
-        subject: forwardSubject,
-        text: forwardBody,
-      });
-      if (forwardSid) await updateMessageProviderSid(context, forwardOutbound.id, forwardSid);
+      try {
+        const forwardSubject = `[Copy] ${subject || '(no subject)'} - from ${event.from}`;
+        const forwardBody = `Forwarded copy of an inbound email to ${event.to}.\nFrom: ${event.from}\n\n${text}`;
+        const forwardContact = await getOrCreateContact(context, 'email_forward', context.FORWARD_EMAIL.toLowerCase());
+        const forwardSid = await sendMail(context, {
+          to: context.FORWARD_EMAIL,
+          from: context.FROM_EMAIL,
+          subject: forwardSubject,
+          text: forwardBody,
+        });
+        await insertMessage(context, forwardContact.id, 'outbound', forwardBody, {
+          subject: forwardSubject,
+          providerSid: forwardSid,
+        });
+      } catch (forwardErr) {
+        console.error('Failed to send forward copy email:', forwardErr);
+      }
     }
 
     const history = await getRecentHistory(context, contact.id);
@@ -59,9 +64,8 @@ exports.handler = async function (context, event, callback) {
     const shouldAutoSend = context.AUTO_SEND_ENABLED === 'true' && classification === 'routine';
 
     if (shouldAutoSend) {
-      const outbound = await insertMessage(context, contact.id, 'outbound', reply, { subject: replySubject });
       const sendgridSid = await sendMail(context, { to: senderEmail, from: context.FROM_EMAIL, subject: replySubject, text: reply });
-      if (sendgridSid) await updateMessageProviderSid(context, outbound.id, sendgridSid);
+      await insertMessage(context, contact.id, 'outbound', reply, { subject: replySubject, providerSid: sendgridSid });
     } else {
       await createPendingReply(context, contact.id, inboundMessage.id, reply, reasoning);
     }

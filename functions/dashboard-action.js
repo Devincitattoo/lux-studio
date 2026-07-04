@@ -6,10 +6,18 @@ exports.handler = async function (context, event, callback) {
     return callback(undefined, response);
   }
 
-  const { getPendingReply, resolvePendingReply, insertMessage, updateMessageProviderSid } = require(Runtime.getFunctions()['db'].path);
+  const { getPendingReply, resolvePendingReply, insertMessage } = require(Runtime.getFunctions()['db'].path);
   const { sendMail } = require(Runtime.getFunctions()['sendgrid'].path);
   const client = context.getTwilioClient();
-  const smsFrom = String(context.TWILIO_PHONE_NUMBER || '').replace(/^whatsapp:/, '').trim();
+  const smsFrom = String(context.TWILIO_PHONE_NUMBER || '').trim();
+
+  function resolveSmsDestination(externalId) {
+    const to = String(externalId || '').trim();
+    if (smsFrom.toLowerCase().startsWith('whatsapp:') && to && !to.toLowerCase().startsWith('whatsapp:')) {
+      return `whatsapp:${to}`;
+    }
+    return to;
+  }
 
   try {
     const item = await getPendingReply(context, event.id);
@@ -19,15 +27,15 @@ exports.handler = async function (context, event, callback) {
         const finalBody = (event.edited_reply || '').trim() || item.draft_body;
         if (item.channel === 'sms') {
           if (!smsFrom) throw new Error('Missing TWILIO_PHONE_NUMBER for approved SMS sends.');
-          const outbound = await insertMessage(context, item.contact_id, 'outbound', finalBody);
-          const sent = await client.messages.create({ to: item.external_id, from: smsFrom, body: finalBody });
-          if (sent?.sid) await updateMessageProviderSid(context, outbound.id, sent.sid);
+          const smsTo = resolveSmsDestination(item.external_id);
+          if (!smsTo) throw new Error('Missing destination for approved SMS send.');
+          const sent = await client.messages.create({ to: smsTo, from: smsFrom, body: finalBody });
+          await insertMessage(context, item.contact_id, 'outbound', finalBody, { providerSid: sent?.sid });
         } else if (item.channel === 'email') {
           const subject = item.inbound_subject || '';
           const replySubject = subject.toLowerCase().startsWith('re:') ? subject : `Re: ${subject}`;
-          const outbound = await insertMessage(context, item.contact_id, 'outbound', finalBody, { subject: replySubject });
           const sendgridSid = await sendMail(context, { to: item.external_id, from: context.FROM_EMAIL, subject: replySubject, text: finalBody });
-          if (sendgridSid) await updateMessageProviderSid(context, outbound.id, sendgridSid);
+          await insertMessage(context, item.contact_id, 'outbound', finalBody, { subject: replySubject, providerSid: sendgridSid });
         }
         await resolvePendingReply(context, item.id, 'approved');
       } else if (event.action === 'reject') {
