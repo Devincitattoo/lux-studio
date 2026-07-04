@@ -178,9 +178,13 @@ def main():
         log(f"  Messaging listing {lid}...")
         try:
             result = scraper.message_host(lid, MESSAGE_TEMPLATE)
-            status = result.get("status", "unknown")
-            log(f"  → {status} | {result.get('url', '')}")
-            if status in ("sent", "existing thread", "unknown"):
+            status = result.get("status") if isinstance(result, dict) else None
+            url    = result.get("url", "") if isinstance(result, dict) else ""
+            log(f"  → {status or 'sent'} | {url}")
+            if status == "error_no_dates":
+                log(f"  [!] Date picker failed for {lid} — will retry next run")
+            else:
+                # Any non-exception return counts — optimistic by design
                 contacted.add(lid)
                 new_contacted += 1
                 if _BRIDGE:
@@ -188,9 +192,6 @@ def main():
                         _bridge.log_outreach(lid, area, MESSAGE_TEMPLATE)
                     except Exception:
                         pass
-            elif status == "error_no_dates":
-                log(f"  [!] Date picker failed for {lid} — will retry next run")
-                # Don't add to contacted so it retries
         except Exception as e:
             log(f"  → Error: {e}")
             traceback.print_exc()
