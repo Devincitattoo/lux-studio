@@ -7,20 +7,20 @@ exports.handler = async function (context, event, callback) {
   if (!context.DASHBOARD_SECRET || event.key !== context.DASHBOARD_SECRET) {
     response.setStatusCode(403);
     response.setBody('Forbidden — missing or incorrect ?key=');
-    return callback(null, response);
+    return callback(undefined, response);
   }
 
-  const { listPendingReplies } = require(Runtime.getFunctions()['db'].path);
+  const { listPendingReplies, listRecentMessages } = require(Runtime.getFunctions()['db'].path);
   const { renderDashboard } = require(Runtime.getFunctions()['dashboard-view'].path);
 
   try {
-    const pending = await listPendingReplies(context);
-    response.setBody(renderDashboard(pending, event.key));
+    const [pending, recentMessages] = await Promise.all([listPendingReplies(context), listRecentMessages(context, 30)]);
+    response.setBody(renderDashboard({ pending, recentMessages, key: event.key }));
   } catch (err) {
     console.error('Failed to load dashboard:', err);
     response.setStatusCode(500);
     response.setBody('Something went wrong loading the queue.');
   }
 
-  callback(null, response);
+  callback(undefined, response);
 };

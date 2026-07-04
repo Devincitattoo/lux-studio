@@ -4,12 +4,13 @@ Claude-powered auto-reply for Lux Studio, across SMS and email. Deployed as Twil
 
 ## How it works
 
-- **SMS**: inbound texts to the Lux Studio Twilio number hit `functions/sms.js` (Twilio-signature protected).
+- **SMS**: inbound texts to the Lux Studio Twilio number hit `functions/sms.js` (Twilio-signature protected). Outbound replies use the inbound `To` number when available, otherwise `TWILIO_PHONE_NUMBER`.
 - **Email**: inbound mail to `devin@luxstudios.shop` is parsed by SendGrid Inbound Parse, relayed through a small Cloudflare Worker (`email-relay-worker.js`, needed because Twilio Functions reject `multipart/form-data`, which SendGrid always sends) to `functions/email-inbound.js`.
 - Both paths call Claude (`functions/claude.js`) with a channel-specific persona (`functions/persona.js` for SMS, `functions/persona-email.js` for email) to draft a reply and classify it as `routine` or `needs_review`.
 - `routine` + `AUTO_SEND_ENABLED=true` → sent automatically (Twilio for SMS, SendGrid Mail Send API for email).
-- `needs_review` → queued in Supabase, shown at `/dashboard` (gated by `DASHBOARD_SECRET`) for manual approve/edit/reject.
+- `needs_review` → queued in Supabase, shown at `/dashboard` (gated by `DASHBOARD_SECRET`) for manual approve/edit/reject, alongside recent pipeline activity from Supabase.
 - Every inbound email also gets forwarded as a copy to `FORWARD_EMAIL` so it's readable in a normal inbox.
+- Airbnb inbox replies captured by `airbnb_getter` are written into `reply_assistant_messages` (channel `airbnb`) and appear in dashboard recent activity.
 
 ## Deploy
 

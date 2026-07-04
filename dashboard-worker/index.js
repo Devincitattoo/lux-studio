@@ -51,7 +51,6 @@ async function getStats(env) {
 
 const HTML = (stats) => `<!DOCTYPE html>
 <html lang="en">
-<head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>LuxStudios — Command Center</title>
@@ -176,7 +175,6 @@ header{
   .page{padding:20px}
 }
 </style>
-</head>
 <body>
 
 <header>

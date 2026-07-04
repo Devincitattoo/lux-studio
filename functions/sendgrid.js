@@ -1,4 +1,9 @@
 async function sendMail(context, { to, from, subject, text }) {
+  const resolvedTo = String(to || '').trim().toLowerCase();
+  if (!resolvedTo) {
+    throw new Error('Missing email recipient.');
+  }
+
   const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
     headers: {
@@ -6,7 +11,7 @@ async function sendMail(context, { to, from, subject, text }) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
+      personalizations: [{ to: [{ email: resolvedTo }] }],
       from: { email: from, name: 'Lux Studio' },
       subject,
       content: [{ type: 'text/plain', value: text }],
@@ -17,18 +22,8 @@ async function sendMail(context, { to, from, subject, text }) {
     const body = await res.text();
     throw new Error(`SendGrid send failed: ${res.status} ${body}`);
   }
+
+  return (res.headers.get('x-message-id') || '').trim();
 }
 
-async function forwardCopy(context, { originalFrom, originalTo, subject, text }) {
-  const forwardTo = context.FORWARD_EMAIL;
-  if (!forwardTo) return;
-
-  await sendMail(context, {
-    to: forwardTo,
-    from: context.FROM_EMAIL,
-    subject: `[Copy] ${subject || '(no subject)'} - from ${originalFrom}`,
-    text: `Forwarded copy of an inbound email to ${originalTo}.\nFrom: ${originalFrom}\n\n${text}`,
-  });
-}
-
-module.exports = { sendMail, forwardCopy };
+module.exports = { sendMail };
