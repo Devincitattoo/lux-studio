@@ -75,12 +75,13 @@ def ensure_contact(thread_id, display_name=None):
     return row.get("id")
 
 
-def _log_msg(contact_id, body, direction="inbound", subject=None):
+def _log_msg(contact_id, body, direction="inbound", subject=None, provider_sid=None):
+    sid = provider_sid or f"airbnb-{int(time.time() * 1000)}"
     payload = {
         "contact_id": contact_id,
         "direction": direction,
         "body": body,
-        "provider_sid": f"airbnb-{int(time.time() * 1000)}",
+        "provider_sid": sid,
     }
     if subject:
         payload["subject"] = subject
@@ -124,7 +125,8 @@ def log_host_message(thread_id, message_body):
     cid = ensure_contact(thread_id)
     if not cid:
         return
-    _log_msg(cid, message_body, direction="inbound")
+    _ensure_lead(thread_id, cid)
+    _log_msg(cid, message_body, direction="inbound", subject="Airbnb Reply")
 
 
 def log_ai_reply(thread_id, reply_body, stage):

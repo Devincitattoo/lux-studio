@@ -2,7 +2,19 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function renderDashboard(pending, key) {
+function channelLabel(channel) {
+  if (channel === 'sms') return 'SMS';
+  if (channel === 'email') return 'Email';
+  if (channel === 'email_forward') return 'Email Forward';
+  if (channel === 'airbnb') return 'Airbnb';
+  return channel || 'Unknown';
+}
+
+function formatActor(message) {
+  return message.display_name || message.external_id || 'Unknown';
+}
+
+function renderDashboard({ pending, recentMessages, key }) {
   const cards = pending
     .map(
       (item) => `
@@ -23,9 +35,23 @@ function renderDashboard(pending, key) {
     )
     .join('\n');
 
+  const inboundCount = recentMessages.filter((m) => m.direction === 'inbound').length;
+  const outboundCount = recentMessages.filter((m) => m.direction === 'outbound').length;
+  const activityRows = recentMessages
+    .map(
+      (message) => `<tr>
+      <td>${new Date(message.created_at).toLocaleString()}</td>
+      <td>${escapeHtml(channelLabel(message.channel))}</td>
+      <td>${escapeHtml(message.direction)}</td>
+      <td>${escapeHtml(formatActor(message))}</td>
+      <td>${escapeHtml(message.subject || '')}</td>
+      <td>${escapeHtml((message.body || '').slice(0, 140))}</td>
+    </tr>`
+    )
+    .join('\n');
+
   return `<!doctype html>
 <html>
-<head>
   <meta charset="utf-8" />
   <title>Reply Assistant — Review Queue</title>
   <style>
@@ -41,11 +67,45 @@ function renderDashboard(pending, key) {
     .approve { background: #1a7f37; color: white; border-color: #1a7f37; }
     .reject { background: white; }
     .empty { color: #888; }
+    .summary { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .pill { border: 1px solid #ddd; border-radius: 999px; padding: 6px 12px; font-size: 13px; background: #fafafa; }
+    .section-title { margin: 24px 0 10px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; border-bottom: 1px solid #eee; padding: 8px 6px; vertical-align: top; }
+    th { color: #666; font-weight: 600; }
   </style>
-</head>
 <body>
-  <h1>Pending replies (${pending.length})</h1>
+  <h1>Reply Assistant Dashboard</h1>
+  <div class="summary">
+    <div class="pill">Pending replies: ${pending.length}</div>
+    <div class="pill">Recent inbound: ${inboundCount}</div>
+    <div class="pill">Recent outbound: ${outboundCount}</div>
+    <div class="pill">Recent total: ${recentMessages.length}</div>
+  </div>
+
+  <h2 class="section-title">Pending replies</h2>
   ${pending.length === 0 ? '<p class="empty">Nothing waiting on you right now.</p>' : cards}
+
+  <h2 class="section-title">Recent pipeline activity</h2>
+  ${
+    recentMessages.length === 0
+      ? '<p class="empty">No message activity yet.</p>'
+      : `<table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Channel</th>
+        <th>Direction</th>
+        <th>Contact</th>
+        <th>Subject</th>
+        <th>Body</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${activityRows}
+    </tbody>
+  </table>`
+  }
 </body>
 </html>`;
 }

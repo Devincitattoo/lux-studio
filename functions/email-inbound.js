@@ -12,12 +12,17 @@ exports.handler = async function (context, event, callback) {
   if (!context.DASHBOARD_SECRET || event.key !== context.DASHBOARD_SECRET) {
     twiml.setStatusCode(403);
     twiml.setBody('Forbidden');
-    return callback(null, twiml);
+    return callback(undefined, twiml);
   }
 
-  const { getOrCreateContact, insertMessage, getRecentHistory, createPendingReply } = require(Runtime.getFunctions()['db'].path);
+  const {
+    getOrCreateContact,
+    insertMessage,
+    getRecentHistory,
+    createPendingReply,
+  } = require(Runtime.getFunctions()['db'].path);
   const { draftReply } = require(Runtime.getFunctions()['claude'].path);
-  const { sendMail, forwardCopy } = require(Runtime.getFunctions()['sendgrid'].path);
+  const { sendMail } = require(Runtime.getFunctions()['sendgrid'].path);
 
   try {
     const senderEmail = extractEmail(event.from);
@@ -27,9 +32,25 @@ exports.handler = async function (context, event, callback) {
     const contact = await getOrCreateContact(context, 'email', senderEmail);
     const inboundMessage = await insertMessage(context, contact.id, 'inbound', text, { subject });
 
-    forwardCopy(context, { originalFrom: event.from, originalTo: event.to, subject, text }).catch((err) =>
-      console.error('Failed to forward copy:', err)
-    );
+    if (context.FORWARD_EMAIL) {
+      try {
+        const forwardSubject = `[Copy] ${subject || '(no subject)'} - from ${event.from}`;
+        const forwardBody = `Forwarded copy of an inbound email to ${event.to}.\nFrom: ${event.from}\n\n${text}`;
+        const forwardContact = await getOrCreateContact(context, 'email_forward', context.FORWARD_EMAIL.toLowerCase());
+        const forwardSid = await sendMail(context, {
+          to: context.FORWARD_EMAIL,
+          from: context.FROM_EMAIL,
+          subject: forwardSubject,
+          text: forwardBody,
+        });
+        await insertMessage(context, forwardContact.id, 'outbound', forwardBody, {
+          subject: forwardSubject,
+          providerSid: forwardSid,
+        });
+      } catch (forwardErr) {
+        console.error('Failed to send forward copy email:', forwardErr);
+      }
+    }
 
     const history = await getRecentHistory(context, contact.id);
     const { reply, classification, reasoning } = await draftReply(context, {
@@ -40,9 +61,11 @@ exports.handler = async function (context, event, callback) {
 
     const replySubject = subject.toLowerCase().startsWith('re:') ? subject : `Re: ${subject}`;
 
-    if (context.AUTO_SEND_ENABLED === 'true') {
-      await sendMail(context, { to: senderEmail, from: context.FROM_EMAIL, subject: replySubject, text: reply });
-      await insertMessage(context, contact.id, 'outbound', reply);
+    const shouldAutoSend = context.AUTO_SEND_ENABLED === 'true' && classification === 'routine';
+
+    if (shouldAutoSend) {
+      const sendgridSid = await sendMail(context, { to: senderEmail, from: context.FROM_EMAIL, subject: replySubject, text: reply });
+      await insertMessage(context, contact.id, 'outbound', reply, { subject: replySubject, providerSid: sendgridSid });
     } else {
       await createPendingReply(context, contact.id, inboundMessage.id, reply, reasoning);
     }
@@ -51,5 +74,5 @@ exports.handler = async function (context, event, callback) {
   }
 
   twiml.setBody('ok');
-  callback(null, twiml);
+  callback(undefined, twiml);
 };

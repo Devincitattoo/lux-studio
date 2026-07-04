@@ -1,16 +1,35 @@
 // .protected.js: Twilio Runtime validates the request signature automatically
 // before this handler runs, so we don't need to check it ourselves.
+function normalizePhone(raw) {
+  return String(raw || '').trim();
+}
+
+function resolveOutboundFrom(context, event) {
+  const fromNumber = normalizePhone(event.To || context.TWILIO_PHONE_NUMBER);
+  if (!fromNumber) {
+    throw new Error('Missing outbound SMS number. Set TWILIO_PHONE_NUMBER or ensure inbound event.To is present.');
+  }
+  return fromNumber;
+}
+
 exports.handler = async function (context, event, callback) {
-  const { getOrCreateContact, insertMessage, getRecentHistory, createPendingReply } = require(Runtime.getFunctions()['db'].path);
+  const {
+    getOrCreateContact,
+    insertMessage,
+    getRecentHistory,
+    createPendingReply,
+  } = require(Runtime.getFunctions()['db'].path);
   const { draftReply } = require(Runtime.getFunctions()['claude'].path);
 
   const twiml = new Twilio.twiml.MessagingResponse();
   const client = context.getTwilioClient();
 
   try {
-    const { From, Body, MessageSid } = event;
+    const { Body, MessageSid } = event;
+    const inboundFrom = normalizePhone(event.From);
+    if (!inboundFrom) throw new Error('Missing event.From in inbound SMS webhook.');
 
-    const contact = await getOrCreateContact(context, 'sms', From);
+    const contact = await getOrCreateContact(context, 'sms', inboundFrom);
     const inboundMessage = await insertMessage(context, contact.id, 'inbound', Body, { providerSid: MessageSid });
 
     const history = await getRecentHistory(context, contact.id);
@@ -20,9 +39,11 @@ exports.handler = async function (context, event, callback) {
       channel: 'sms',
     });
 
-    if (context.AUTO_SEND_ENABLED === 'true') {
-      await client.messages.create({ to: From, from: context.TWILIO_PHONE_NUMBER, body: reply });
-      await insertMessage(context, contact.id, 'outbound', reply);
+    const shouldAutoSend = context.AUTO_SEND_ENABLED === 'true' && classification === 'routine';
+
+    if (shouldAutoSend) {
+      const sent = await client.messages.create({ to: inboundFrom, from: resolveOutboundFrom(context, event), body: reply });
+      await insertMessage(context, contact.id, 'outbound', reply, { providerSid: sent?.sid });
     } else {
       await createPendingReply(context, contact.id, inboundMessage.id, reply, reasoning);
     }
@@ -32,5 +53,5 @@ exports.handler = async function (context, event, callback) {
     console.error('Failed to process inbound SMS:', err);
   }
 
-  callback(null, twiml);
+  callback(undefined, twiml);
 };
