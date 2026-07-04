@@ -12,6 +12,15 @@ function normalizeOptionalText(value) {
   return value == undefined ? '' : String(value);
 }
 
+function normalizeMessageRow(row = {}) {
+  return {
+    ...row,
+    body: normalizeOptionalText(row.body),
+    subject: normalizeOptionalText(row.subject),
+    provider_sid: normalizeOptionalText(row.provider_sid),
+  };
+}
+
 async function getOrCreateContact(context, channel, externalId) {
   const db = getClient(context);
 
@@ -34,16 +43,24 @@ async function getOrCreateContact(context, channel, externalId) {
 }
 
 async function insertMessage(context, contactId, direction, body, options = {}) {
-  const safeProviderSid = normalizeOptionalText(options.providerSid);
-  const safeSubject = normalizeOptionalText(options.subject);
+  const metadata = normalizeMessageRow({
+    provider_sid: options.providerSid,
+    subject: options.subject,
+  });
   const db = getClient(context);
   const { data, error } = await db
     .from('reply_assistant_messages')
-    .insert({ contact_id: contactId, direction, body, provider_sid: safeProviderSid, subject: safeSubject })
+    .insert({
+      contact_id: contactId,
+      direction,
+      body: normalizeOptionalText(body),
+      provider_sid: metadata.provider_sid,
+      subject: metadata.subject,
+    })
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return normalizeMessageRow(data);
 }
 
 async function updateMessageProviderSid(context, messageId, providerSid) {
@@ -108,10 +125,10 @@ async function listRecentMessages(context, limit = 25) {
   if (error) throw error;
 
   return data.map((row) => ({
-    ...row,
-    channel: row.reply_assistant_contacts?.channel || 'unknown',
-    external_id: row.reply_assistant_contacts?.external_id || '',
-    display_name: row.reply_assistant_contacts?.display_name || '',
+    ...normalizeMessageRow(row),
+    channel: normalizeOptionalText(row.reply_assistant_contacts?.channel) || 'unknown',
+    external_id: normalizeOptionalText(row.reply_assistant_contacts?.external_id),
+    display_name: normalizeOptionalText(row.reply_assistant_contacts?.display_name),
   }));
 }
 
@@ -127,9 +144,9 @@ async function getPendingReply(context, id) {
 
   return {
     ...data,
-    external_id: data.reply_assistant_contacts?.external_id,
-    channel: data.reply_assistant_contacts?.channel,
-    inbound_subject: data.reply_assistant_messages?.subject,
+    external_id: normalizeOptionalText(data.reply_assistant_contacts?.external_id),
+    channel: normalizeOptionalText(data.reply_assistant_contacts?.channel),
+    inbound_subject: normalizeOptionalText(data.reply_assistant_messages?.subject),
   };
 }
 

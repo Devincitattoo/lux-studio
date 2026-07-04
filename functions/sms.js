@@ -16,6 +16,7 @@ exports.handler = async function (context, event, callback) {
   const {
     getOrCreateContact,
     insertMessage,
+    updateMessageProviderSid,
     getRecentHistory,
     createPendingReply,
   } = require(Runtime.getFunctions()['db'].path);
@@ -42,8 +43,9 @@ exports.handler = async function (context, event, callback) {
     const shouldAutoSend = context.AUTO_SEND_ENABLED === 'true' && classification === 'routine';
 
     if (shouldAutoSend) {
+      const outboundMessage = await insertMessage(context, contact.id, 'outbound', reply);
       const sent = await client.messages.create({ to: inboundFrom, from: resolveOutboundFrom(context, event), body: reply });
-      await insertMessage(context, contact.id, 'outbound', reply, { providerSid: sent?.sid });
+      await updateMessageProviderSid(context, outboundMessage.id, sent?.sid);
     } else {
       await createPendingReply(context, contact.id, inboundMessage.id, reply, reasoning);
     }

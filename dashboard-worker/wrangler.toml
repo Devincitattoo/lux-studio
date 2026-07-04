@@ -11,7 +11,3 @@ SUPABASE_URL = "https://eiiitnlemtffvmxgmuue.supabase.co"
 [[routes]]
 pattern = "dashboard.luxstudio.shop/*"
 zone_name = "luxstudio.shop"
-
-[[routes]]
-pattern = "dashboard.luxstudios.shop/*"
-zone_name = "luxstudios.shop"

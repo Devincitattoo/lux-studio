@@ -647,10 +647,13 @@ Rules:
                 updated[f"{tid}_msgcount"] = curr_count
 
                 # Log new host messages to Supabase
+                latest_inbound_message_id = None
                 if _BRIDGE:
                     try:
                         for msg in messages[prev_count:]:
-                            _bridge.log_host_message(tid, msg)
+                            logged = _bridge.log_host_message(tid, msg)
+                            if logged and logged.get("id"):
+                                latest_inbound_message_id = logged["id"]
                     except Exception:
                         pass
 
@@ -678,7 +681,7 @@ Rules:
                 if sent:
                     if _BRIDGE:
                         try:
-                            _bridge.log_ai_reply(tid, reply, new_stage)
+                            _bridge.log_ai_reply(tid, reply, new_stage, latest_inbound_message_id)
                         except Exception:
                             pass
                     if new_stage == "video_sent":

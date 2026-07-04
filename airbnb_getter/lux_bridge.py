@@ -121,15 +121,15 @@ def log_outreach(listing_id, area, message):
 def log_host_message(thread_id, message_body):
     """Called when a new message from the host is detected in a thread."""
     if not _ok() or not message_body:
-        return
+        return {}
     cid = ensure_contact(thread_id)
     if not cid:
-        return
+        return {}
     _ensure_lead(thread_id, cid)
-    _log_msg(cid, message_body, direction="inbound", subject="Airbnb Reply")
+    return _log_msg(cid, message_body, direction="inbound", subject="Airbnb Reply")
 
 
-def log_ai_reply(thread_id, reply_body, stage):
+def log_ai_reply(thread_id, reply_body, stage, inbound_message_id=None):
     """Called after the AI sends a reply. Logs it as outbound + approved pending reply."""
     if not _ok() or not reply_body:
         return
@@ -138,10 +138,10 @@ def log_ai_reply(thread_id, reply_body, stage):
         return
     msg = _log_msg(cid, reply_body, direction="outbound")
     # Mirror into pending_replies as approved so the dashboard has a full audit trail
-    if msg and msg.get("id"):
+    if msg and msg.get("id") and inbound_message_id:
         _post("reply_assistant_pending_replies", {
             "contact_id": cid,
-            "inbound_message_id": None,
+            "inbound_message_id": inbound_message_id,
             "draft_body": reply_body,
             "reasoning": f"Auto-sent by Airbnb AI — stage: {stage}",
             "status": "approved",

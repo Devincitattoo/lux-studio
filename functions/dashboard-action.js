@@ -6,7 +6,7 @@ exports.handler = async function (context, event, callback) {
     return callback(undefined, response);
   }
 
-  const { getPendingReply, resolvePendingReply, insertMessage } = require(Runtime.getFunctions()['db'].path);
+  const { getPendingReply, resolvePendingReply, insertMessage, updateMessageProviderSid } = require(Runtime.getFunctions()['db'].path);
   const { sendMail } = require(Runtime.getFunctions()['sendgrid'].path);
   const client = context.getTwilioClient();
   const smsFrom = String(context.TWILIO_PHONE_NUMBER || '').trim();
@@ -29,13 +29,15 @@ exports.handler = async function (context, event, callback) {
           if (!smsFrom) throw new Error('Missing TWILIO_PHONE_NUMBER for approved SMS sends.');
           const smsTo = resolveSmsDestination(item.external_id);
           if (!smsTo) throw new Error('Missing destination for approved SMS send.');
+          const outboundMessage = await insertMessage(context, item.contact_id, 'outbound', finalBody);
           const sent = await client.messages.create({ to: smsTo, from: smsFrom, body: finalBody });
-          await insertMessage(context, item.contact_id, 'outbound', finalBody, { providerSid: sent?.sid });
+          await updateMessageProviderSid(context, outboundMessage.id, sent?.sid);
         } else if (item.channel === 'email') {
           const subject = item.inbound_subject || '';
           const replySubject = subject.toLowerCase().startsWith('re:') ? subject : `Re: ${subject}`;
+          const outboundMessage = await insertMessage(context, item.contact_id, 'outbound', finalBody, { subject: replySubject });
           const sendgridSid = await sendMail(context, { to: item.external_id, from: context.FROM_EMAIL, subject: replySubject, text: finalBody });
-          await insertMessage(context, item.contact_id, 'outbound', finalBody, { subject: replySubject, providerSid: sendgridSid });
+          await updateMessageProviderSid(context, outboundMessage.id, sendgridSid);
         }
         await resolvePendingReply(context, item.id, 'approved');
       } else if (event.action === 'reject') {
