@@ -58,12 +58,8 @@ def main():
     state = load_state()
     thread_states = state.get("thread_states", {})
 
-    if not thread_states:
-        log("No active threads — nothing to do.")
-        return
-
     active = sum(1 for k, v in thread_states.items() if not k.endswith("_msgcount") and v not in ("done",))
-    log(f"Checking inbox — {active} active threads...")
+    log(f"Checking inbox — {active} tracked threads (will also pick up any untracked replies)...")
 
     scraper = AirbnbScraper(headless=True)
 
