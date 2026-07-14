@@ -1,0 +1,7 @@
+tunnel: 01b76376-68a4-41da-ade2-ea0e14c427f1
+credentials-file: /Users/dvncii/.cloudflared/01b76376-68a4-41da-ade2-ea0e14c427f1.json
+
+ingress:
+  - hostname: luxstudios.shop
+    service: http://localhost:3000
+  - service: http_status:404

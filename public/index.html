@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lux Studio — Cinematic Property Videos</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #0a0a0a;
+      color: #f5f5f5;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 80px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+    .tagline {
+      font-size: 20px;
+      color: #aaa;
+      margin-bottom: 60px;
+    }
+    .packages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    .package {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: left;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .package:hover {
+      transform: translateY(-4px);
+      border-color: #d4af37;
+    }
+    .package h2 {
+      font-size: 24px;
+      margin: 0 0 8px;
+    }
+    .price {
+      font-size: 36px;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 16px;
+    }
+    .features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px;
+      color: #bbb;
+    }
+    .features li {
+      margin-bottom: 8px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .features li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #d4af37;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #d4af37;
+      color: #0a0a0a;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #e5c14c;
+    }
+    .footer {
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lux Studio</h1>
+    <p class="tagline">Cinematic video flythroughs for luxury Airbnb & real estate listings.</p>
+
+    <div class="packages">
+      <div class="package">
+        <h2>Essential</h2>
+        <div class="price">$799 CAD</div>
+        <ul class="features">
+          <li>Up to 4 bedrooms</li>
+          <li>30–45 second film</li>
+          <li>Social cutdowns</li>
+          <li>Delivery in ~1 week</li>
+        </ul>
+        <a class="btn" href="/pay?package=essential">Book Essential</a>
+      </div>
+
+      <div class="package">
+        <h2>Signature</h2>
+        <div class="price">$1,399 CAD</div>
+        <ul class="features">
+          <li>5–6 bedrooms</li>
+          <li>60 second film</li>
+          <li>Multiple social cuts</li>
+          <li>Priority delivery</li>
+        </ul>
+        <a class="btn" href="/pay?package=signature">Book Signature</a>
+      </div>
+
+      <div class="package">
+        <h2>Estate</h2>
+        <div class="price">$2,000 CAD</div>
+        <ul class="features">
+          <li>7+ bedrooms</li>
+          <li>90 second film</li>
+          <li>Full cutdown package</li>
+          <li>White-glove service</li>
+        </ul>
+        <a class="btn" href="/pay?package=estate">Book Estate</a>
+      </div>
+    </div>
+
+    <p class="footer">Questions? Reply to your Airbnb message thread or email us.</p>
+  </div>
+</body>
+</html>

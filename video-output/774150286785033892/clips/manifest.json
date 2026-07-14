@@ -1,0 +1,32 @@
+[
+  {
+    "index": 1,
+    "queue_id": null,
+    "file": "/Users/dvncii/GitHub LUX /lux-studio/video-output/774150286785033892/clips/clip_001.mp4",
+    "prompt": "Slow cinematic push-in across a luxury bedroom at night, city lights twinkling through floor-to-ceiling windows, warm ambient interior lighting, smooth camera motion."
+  },
+  {
+    "index": 2,
+    "queue_id": "019f6194-416a-7d2d-ac5c-10e17a94d194",
+    "file": "/Users/dvncii/GitHub LUX /lux-studio/video-output/774150286785033892/clips/clip_002.mp4",
+    "prompt": "Smooth camera drift through a modern hillside living room, revealing panoramic green canyon views through glass walls, golden natural light."
+  },
+  {
+    "index": 8,
+    "queue_id": "019f6197-b50b-7150-b81e-114e62b032e8",
+    "file": "/Users/dvncii/GitHub LUX /lux-studio/video-output/774150286785033892/clips/clip_008.mp4",
+    "prompt": "Slow aerial-style glide above the sofa toward sweeping floor-to-ceiling windows, lush canyon and a distant city skyline beyond."
+  },
+  {
+    "index": 14,
+    "queue_id": "019f619b-5893-77cf-9ebc-2491b97915ea",
+    "file": "/Users/dvncii/GitHub LUX /lux-studio/video-output/774150286785033892/clips/clip_014.mp4",
+    "prompt": "Cinematic push-in through a serene master suite, a glass-walled spa bathroom and private balcony visible, soft daylight."
+  },
+  {
+    "index": 28,
+    "queue_id": "019f619d-6fd1-731c-9aa0-03ff758a0aca",
+    "file": "/Users/dvncii/GitHub LUX /lux-studio/video-output/774150286785033892/clips/clip_028.mp4",
+    "prompt": "Cinematic drone flyover approaching a modern glass Beverly Hills mansion at dusk, trees and hillside surrounding the architecture, gentle reveal."
+  }
+]

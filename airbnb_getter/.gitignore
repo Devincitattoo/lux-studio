@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+scraper_state.json
+airbnb_session.json
+api_calls.json
+scraper_cron.log
+*.log
+.env

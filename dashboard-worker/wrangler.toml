@@ -1,0 +1,17 @@
+name = "luxstudios-dashboard"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+SUPABASE_URL = "https://eiiitnlemtffvmxgmuue.supabase.co"
+
+# Set SUPABASE_SECRET_KEY as a secret:
+# wrangler secret put SUPABASE_SECRET_KEY
+
+[[routes]]
+pattern = "dashboard.luxstudio.shop/*"
+zone_name = "luxstudio.shop"
+
+[[routes]]
+pattern = "dashboard.luxstudios.shop/*"
+zone_name = "luxstudios.shop"
