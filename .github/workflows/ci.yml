@@ -34,7 +34,6 @@ jobs:
         env:
           PORT: "3000"
           DASHBOARD_SECRET: "ci-test-secret"
-          DATABASE_PATH: "./data/ci-test.db"
         run: |
           node server.js &
           server_pid=$!
