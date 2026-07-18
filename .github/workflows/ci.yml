@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Syntax check all JS files
+        run: |
+          status=0
+          for file in $(git ls-files '*.js'); do
+            node --check "$file" || status=1
+          done
+          exit $status
+
+      - name: Boot server and check /health
+        env:
+          PORT: "3000"
+          DASHBOARD_SECRET: "ci-test-secret"
+        run: |
+          node server.js &
+          server_pid=$!
+
+          ready=false
+          for attempt in $(seq 1 10); do
+            if curl -sf http://localhost:3000/health; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+
+          kill "$server_pid"
+          wait "$server_pid" || true
+
+          if [ "$ready" != "true" ]; then
+            echo "Server never became healthy"
+            exit 1
+          fi
